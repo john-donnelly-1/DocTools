@@ -1,0 +1,54 @@
+// Get the bullet points under To Do's to turn into tasks
+function getBulletPoints() {
+    var body = DocumentApp.getActiveDocument().getBody();
+    var bulletPoints = [];
+    var paragraphs = body.getParagraphs();
+    var limit = Math.min(100, paragraphs.length);
+    var foundTodoSection = false;
+    var todoNestingLevel = -1;
+
+    for (var i = 0; i < limit; i++) {
+        if (paragraphs[i].getType() === DocumentApp.ElementType.LIST_ITEM) {
+            var listItem = paragraphs[i].asListItem();
+
+            // Check if the list item contains the "To do's" bullet.
+            if (listItem.getText() === "To Do's") {
+                foundTodoSection = true;
+                todoNestingLevel = listItem.getNestingLevel();
+                continue;
+            }
+
+            if (foundTodoSection) {
+                // If we encounter a bullet at the same level as "To Do's", break out of the loop.
+                if (listItem.getNestingLevel() === todoNestingLevel) {
+                    break;
+                }
+
+                // If it's a sub-bullet of "To Do's", add it to the list.
+                if (listItem.getNestingLevel() > todoNestingLevel) {
+                    bulletPoints.push(listItem.getText());
+                }
+            }
+        }
+    }
+    return bulletPoints;
+    
+}
+
+
+
+function createTasks() {
+    var bulletPoints = getBulletPoints();
+    var dueDate = new Date();
+    
+    // Set the due date to be 2 days from today.
+    dueDate.setDate(dueDate.getDate() + 2);
+
+    for (var i = 0; i < bulletPoints.length; i++) {
+        var task = {
+            title: bulletPoints[i],
+            due: dueDate.toISOString() // Format to ISO string
+        };
+        Tasks.Tasks.insert(task, '@default');
+    }
+}
