@@ -1,0 +1,86 @@
+function onOpen() {
+  var ui = DocumentApp.getUi();
+  ui.createMenu('Add new date header')
+      .addItem("Add Thursday's date", 'addNextThursday')
+      .addItem('Add today\'s date', 'addToday')
+      .addItem("Add next meeting's Date (meetingName)", 'addNextMeetingDate')
+      .addToUi();
+  ui.createMenu('Task Creator')
+      .addItem('Create Tasks', 'createTasks')
+      .addToUi();
+}
+
+// how many days until next thursday
+function daysTilThursdayFun (todaysDay) {
+  if (todaysDay < 4) {
+      daysTilThursday2 = 4 - todaysDay;
+      return daysTilThursday2
+    }
+  else {
+      daysTilThursday2 = 6 - todaysDay + 4
+      return daysTilThursday2
+    }
+}
+
+// date of next Thursday
+function nextThursday() {
+  let todaysDay = new Date().getDay();
+  let daysTilThursday = daysTilThursdayFun(todaysDay);
+  let thursdaysDate = Utilities.formatDate(new Date(Date.now() + daysTilThursday*1000*60*60*24), "EST", "MM/dd/yyyy");
+  console.log(todaysDay);
+  console.log(daysTilThursday);
+  console.log(thursdaysDate);
+  return thursdaysDate
+
+}
+
+// add next Thursday's date as heading 1
+function addNextThursday() {
+  let dateToAdd = nextThursday();
+  console.log(dateToAdd);
+
+  let body = DocumentApp.getActiveDocument().getBody();
+
+  let header = body.insertParagraph(0, dateToAdd);
+  header.setHeading(DocumentApp.ParagraphHeading.HEADING1);  
+}
+
+// Add today's date
+function addToday() {
+    let body = DocumentApp.getActiveDocument().getBody();
+
+    let todaysDate = Utilities.formatDate(new Date(), "GMT+1", "MM/dd/yyyy");
+
+    let header = body.insertParagraph(0, todaysDate);
+    header.setHeading(DocumentApp.ParagraphHeading.HEADING1);  
+}
+
+function addNextMeetingDate(){
+  let body = DocumentApp.getActiveDocument().getBody();
+
+  let nextMeetingDate = getDateOfMeetingGPT("meetingName")
+
+  let header = body.insertParagraph(0, nextMeetingDate);
+  header.setHeading(DocumentApp.ParagraphHeading.HEADING1)
+  let items = ["Working on", "On hold", "To Do's", "Complete"];
+  for (let i = 0; i < items.length; i++) {
+    body.insertListItem(i + 1, items[i]).setGlyphType(DocumentApp.GlyphType.BULLET);
+  }
+}
+
+
+function getDateOfMeetingGPT(name) {
+  var calendar = CalendarApp.getDefaultCalendar(); // get the default calendar
+  var startDate = new Date();
+  var endDate = new Date();
+  endDate.setDate(endDate.getDate() + 7); // search for events in the next 7 days
+  var events = calendar.getEvents(startDate, endDate); // get all events in the time range
+  for (var i = 0; i < events.length; i++) {
+    var event = events[i];
+    if (event.getTitle() === name) { // check if the event title matches the specified name
+      return event.getStartTime().toLocaleDateString(); // return the date of the matching event
+    }
+  }
+  return "No meeting found with name " + name; // return a message if no matching event is found
+
+}
